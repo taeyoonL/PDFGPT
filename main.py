@@ -1,6 +1,8 @@
 from openai import OpenAI
 import streamlit as st
 import time
+import tempfile
+import os
 
 
 client = OpenAI(api_key = "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")
@@ -13,10 +15,14 @@ st.write("Isn't it amazing?? Come and check it out!!")
 
 st.write("")
 
-file = st.file_uploader("Choose Your File!!")
-if file is not None:
-    File = client.files.create(
-        file = open(file.name, "rb"),
+upload_file = st.file_uploader("Choose Your File!!")
+if upload_file is not None:
+    temp_dir = tempfile.TemporaryDirectory()
+    temp_file_path = os.path.join(temp_dir.name, upload_file.name)
+    with open(temp_file_path, "wb") as f:
+        f.write(upload_file.getvalue())
+    file = client.files.create(
+        file = open(temp_file_path, "rb"),
         purpose = "assistants"
     )
     assistant = client.beta.assistants.create(
@@ -24,7 +30,7 @@ if file is not None:
         model = "gpt-3.5-turbo-1106",
         instructions = "You are PDFGPT that provides appropriate responses to user based on the contents of the pdf file that the user posted.",
         tools = [{'type' : 'retrieval'}],
-        file_ids = [File.id]
+        file_ids = [file.id]
     )
     assistant_id = assistant.id
     st.write('Your PDF file is sucessfully uploaded!!')
